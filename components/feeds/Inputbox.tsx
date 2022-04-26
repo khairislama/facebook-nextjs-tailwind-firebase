@@ -2,28 +2,69 @@ import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import { EmojiHappyIcon } from '@heroicons/react/outline'
 import { CameraIcon, VideoCameraIcon } from '@heroicons/react/solid'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { db } from '../../firebase'
-import firebase from 'firebase'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+const { v4: uuidv4 } = require('uuid')
+import { getStorage, ref, getDownloadURL, uploadString } from 'firebase/storage'
 
 function Inputbox() {
   const { data: session }: any = useSession()
   const inputRef = useRef(null)
+  const filepickerRef = useRef(null)
+  const [imageToPost, setImageToPost] = useState(null)
+  const [message, setMessage] = useState('')
 
-  const sendPost = (e: any) => {
+  const sendPost = async (e: any) => {
     e.preventDefault()
 
     if (!inputRef.current.value) return
 
-    db.collection('posts').add({
+    const myUuid = uuidv4()
+    const myDocument = doc(db, 'posts', myUuid)
+    setDoc(myDocument, {
       message: inputRef.current.value,
       name: session.user.name,
       email: session.user.email,
       image: session.user.image,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      timestamp: serverTimestamp(),
+    }).then((doc) => {
+      if (imageToPost) {
+        //upload image
+        uploadString(
+          ref(getStorage(), `posts/${myUuid}`),
+          imageToPost,
+          'data_url'
+        ).then((data) => {
+          removeImage()
+          getDownloadURL(data.ref).then((url) => {
+            setDoc(
+              myDocument,
+              {
+                postImage: url,
+              },
+              { merge: true }
+            )
+          })
+        })
+      }
     })
 
     inputRef.current.value = ''
+  }
+
+  const addImageToPost = (e: any) => {
+    const reader = new FileReader()
+    if (e.target.files[0]) {
+      reader.readAsDataURL(e.target.files[0])
+    }
+    reader.onload = (readerEvent) => {
+      setImageToPost(readerEvent.target.result)
+    }
+  }
+
+  const removeImage = () => {
+    setImageToPost(null)
   }
 
   return (
@@ -47,15 +88,33 @@ function Inputbox() {
             Submit
           </button>
         </form>
+        {imageToPost && (
+          <div
+            onClick={removeImage}
+            className="flex transform cursor-pointer flex-col filter transition duration-150 hover:scale-105 hover:brightness-110"
+          >
+            <img className="h-10 object-contain" src={imageToPost} alt="" />
+            <p className="text-center text-xs text-red-500">Remove</p>
+          </div>
+        )}
       </div>
       <div className="flex justify-evenly border-t p-3">
         <div className="inputIcon">
           <VideoCameraIcon className="h-7 text-red-500" />
           <p className="text-xs sm:text-sm xl:text-base">Live Video</p>
         </div>
-        <div className="inputIcon">
+        <div
+          onClick={() => filepickerRef.current.click()}
+          className="inputIcon"
+        >
           <CameraIcon className="h-7 text-green-400" />
           <p className="text-xs sm:text-sm xl:text-base">Photo/Video</p>
+          <input
+            type="file"
+            hidden
+            onChange={addImageToPost}
+            ref={filepickerRef}
+          />
         </div>
         <div className="inputIcon">
           <EmojiHappyIcon className="h-7 text-yellow-300" />
