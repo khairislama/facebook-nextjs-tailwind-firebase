@@ -1,17 +1,24 @@
-import { initializeApp } from 'firebase/app'
+// Import the functions you need from the SDKs you need
+import { initializeApp, getApps, getApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: 'AIzaSyDNSfJq8yAH_gaMjFRddLgYqeLJQO-pb3Y',
-  authDomain: 'facebook-clone-b8951.firebaseapp.com',
-  projectId: 'facebook-clone-b8951',
-  storageBucket: 'facebook-clone-b8951.appspot.com',
-  messagingSenderId: '717985145037',
-  appId: '1:717985145037:web:e5f5878e6ea338b7b1c984',
+  apiKey: 'AIzaSyAQzLfaRm-TvTje9GZJImD2-Enr2dAinDI',
+  authDomain: 'insta-clone-25a36.firebaseapp.com',
+  projectId: 'insta-clone-25a36',
+  storageBucket: 'insta-clone-25a36.appspot.com',
+  messagingSenderId: '369163535847',
+  appId: '1:369163535847:web:a4c98822814d1b88c32942',
 }
 
-const app = initializeApp(firebaseConfig)
-const db = getFirestore(app)
+// Initialize Firebase
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp()
 
-//const storage = firebase.storage()
-export { db }
+const db = getFirestore()
+const storage = getStorage()
+
+export { app, db, storage }
